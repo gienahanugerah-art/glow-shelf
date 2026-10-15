@@ -151,3 +151,7 @@ button {
     grid-template-columns: 1fr;
   }
 }
+.btn-favorit {
+  margin-top: 8px;
+  width: 100%;
+}

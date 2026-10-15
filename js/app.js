@@ -1,8 +1,33 @@
-import { API_URL, PRODUCT_LIMIT } from './config.js';
+import { API_URL, PRODUCT_LIMIT, KEY_FAVORIT } from './config.js';
 
 const productList = document.getElementById('product-list');
+const favoriteList = document.getElementById('favorite-list');
 
 let semuaProduk = [];
+let favoritIds = bacaFavorit();
+
+function bacaFavorit() {
+  try {
+    const tersimpan = localStorage.getItem(KEY_FAVORIT);
+    return tersimpan ? JSON.parse(tersimpan) : [];
+  } catch (error) {
+    console.error('Gagal membaca favorit:', error.message);
+    return [];
+  }
+}
+
+function simpanFavorit() {
+  localStorage.setItem(KEY_FAVORIT, JSON.stringify(favoritIds));
+}
+
+function toggleFavorit(id) {
+  if (favoritIds.includes(id)) {
+    favoritIds = favoritIds.filter((item) => item !== id);
+  } else {
+    favoritIds.push(id);
+  }
+  simpanFavorit();
+}
 
 function formatHarga(angka) {
   return '$' + angka.toFixed(2);
@@ -31,7 +56,14 @@ function buatKartu(produk) {
   const rating = document.createElement('p');
   rating.textContent = `Rating: ${produk.rating}`;
 
-  kartu.append(gambar, judul, kategori, harga, rating);
+    const tombol = document.createElement('button');
+  tombol.type = 'button';
+  tombol.className = 'btn-favorit';
+  tombol.dataset.id = produk.id;
+  const sudahFavorit = favoritIds.includes(produk.id);
+  tombol.textContent = sudahFavorit ? '♥ Hapus dari favorit' : '♡ Simpan ke favorit';
+
+  kartu.append(gambar, judul, kategori, harga, rating, tombol);
   return kartu;
 }
 
@@ -41,6 +73,44 @@ function tampilkanProduk(daftar) {
     productList.appendChild(buatKartu(produk));
   });
 }
+
+function tampilkanFavorit() {
+  favoriteList.innerHTML = '';
+
+  const daftarFavorit = semuaProduk.filter((produk) =>
+    favoritIds.includes(produk.id)
+  );
+
+  if (daftarFavorit.length === 0) {
+    const pesan = document.createElement('p');
+    pesan.textContent = 'Belum ada produk favorit.';
+    favoriteList.appendChild(pesan);
+    return;
+  }
+
+  daftarFavorit.forEach((produk) => {
+    favoriteList.appendChild(buatKartu(produk));
+  });
+}
+
+function tanganiKlikFavorit(event) {
+  const tombol = event.target.closest('.btn-favorit');
+  if (!tombol) return;
+
+  const id = Number(tombol.dataset.id);
+  const asal = event.currentTarget.id;
+
+  toggleFavorit(id);
+  tampilkanProduk(semuaProduk);
+  tampilkanFavorit();
+
+  // kembalikan fokus ke tombol yang tadi ditekan (untuk pengguna keyboard)
+  const tombolBaru = document.querySelector(`#${asal} [data-id="${id}"]`);
+  if (tombolBaru) tombolBaru.focus();
+}
+
+productList.addEventListener('click', tanganiKlikFavorit);
+favoriteList.addEventListener('click', tanganiKlikFavorit);
 
 async function ambilProduk() {
   try {
@@ -55,6 +125,8 @@ async function ambilProduk() {
 
     console.log('Jumlah produk:', semuaProduk.length);
     tampilkanProduk(semuaProduk);
+    tampilkanFavorit();
+
   } catch (error) {
     console.error('Gagal mengambil data:', error.message);
   }
