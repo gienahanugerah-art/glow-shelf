@@ -192,3 +192,25 @@ button {
   width: 100%;
 }
 html { scroll-behavior: smooth; }
+.error {
+  color: var(--error);
+  font-weight: 600;
+  margin: 4px 0 0;
+}
+.error:empty { display: none; }
+
+[aria-invalid="true"] {
+  border: 2px solid var(--error);
+}
+
+#form-status {
+  margin-top: 12px;
+  font-weight: 600;
+}
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
