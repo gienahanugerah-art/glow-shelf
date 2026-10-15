@@ -169,6 +169,19 @@ button {
   }
 }
 
+.stat {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+}
+.stat p { margin: 2px 0; }
+.stat-nilai {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: var(--accent);
+}
+
 #theme-toggle {
   background: transparent;
   color: inherit;

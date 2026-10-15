@@ -102,6 +102,7 @@ function tanganiKlikFavorit(event) {
 
   toggleFavorit(id);
   tampilkanProduk(semuaProduk);
+  tampilkanStatistik(semuaProduk);
   tampilkanFavorit();
 
   // kembalikan fokus ke tombol yang tadi ditekan (untuk pengguna keyboard)
@@ -125,11 +126,68 @@ async function ambilProduk() {
 
     console.log('Jumlah produk:', semuaProduk.length);
     tampilkanProduk(semuaProduk);
+    tampilkanStatistik(semuaProduk);
     tampilkanFavorit();
 
   } catch (error) {
     console.error('Gagal mengambil data:', error.message);
   }
+}
+
+// ---------- analisis data ----------
+const statsEl = document.getElementById('stats');
+
+function hitungStatistik(daftar) {
+  if (daftar.length === 0) return null;
+
+  const totalHarga = daftar.reduce((jumlah, produk) => jumlah + produk.price, 0);
+  const totalRating = daftar.reduce((jumlah, produk) => jumlah + produk.rating, 0);
+  const termahal = daftar.reduce((maks, produk) =>
+    produk.price > maks.price ? produk : maks
+  );
+
+  return {
+    rataHarga: totalHarga / daftar.length,
+    rataRating: totalRating / daftar.length,
+    termahal,
+  };
+}
+
+function buatStat(label, nilai, keterangan) {
+  const kotak = document.createElement('div');
+  kotak.className = 'stat';
+
+  const teksLabel = document.createElement('p');
+  teksLabel.className = 'stat-label';
+  teksLabel.textContent = label;
+
+  const teksNilai = document.createElement('p');
+  teksNilai.className = 'stat-nilai';
+  teksNilai.textContent = nilai;
+
+  const teksKet = document.createElement('p');
+  teksKet.textContent = keterangan;
+
+  kotak.append(teksLabel, teksNilai, teksKet);
+  return kotak;
+}
+
+function tampilkanStatistik(daftar) {
+  statsEl.innerHTML = '';
+  const hasil = hitungStatistik(daftar);
+
+  if (!hasil) {
+    const pesan = document.createElement('p');
+    pesan.textContent = 'Belum ada data untuk dihitung.';
+    statsEl.appendChild(pesan);
+    return;
+  }
+
+  statsEl.append(
+    buatStat('Rata-rata harga', formatHarga(hasil.rataHarga), `dari ${daftar.length} produk`),
+    buatStat('Rata-rata rating', hasil.rataRating.toFixed(2), 'dari semua produk di rak'),
+    buatStat('Produk termahal', formatHarga(hasil.termahal.price), hasil.termahal.title)
+  );
 }
 
 ambilProduk();
