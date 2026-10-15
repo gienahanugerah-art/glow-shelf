@@ -1,4 +1,4 @@
-import { API_URL, PRODUCT_LIMIT, KEY_FAVORIT } from './config.js';
+import { API_URL, PRODUCT_LIMIT, KEY_FAVORIT, KEY_TEMA } from './config.js';
 
 const productList = document.getElementById('product-list');
 const favoriteList = document.getElementById('favorite-list');
@@ -133,3 +133,35 @@ async function ambilProduk() {
 }
 
 ambilProduk();
+
+// ---------- tema terang/gelap ----------
+const themeToggle = document.getElementById('theme-toggle');
+
+function terapkanTema(tema) {
+  document.documentElement.setAttribute('data-theme', tema);
+  themeToggle.textContent = tema === 'dark' ? 'Mode terang' : 'Mode gelap';
+}
+
+function bacaTema() {
+  try {
+    const tersimpan = localStorage.getItem(KEY_TEMA);
+    if (tersimpan === 'dark' || tersimpan === 'light') return tersimpan;
+  } catch (error) {
+    console.error('Gagal membaca tema:', error.message);
+  }
+  return 'light';
+}
+
+function ubahTema() {
+  const sekarang = document.documentElement.getAttribute('data-theme');
+  const baru = sekarang === 'dark' ? 'light' : 'dark';
+  terapkanTema(baru);
+  try {
+    localStorage.setItem(KEY_TEMA, baru);
+  } catch (error) {
+    console.error('Gagal menyimpan tema:', error.message);
+  }
+}
+
+themeToggle.addEventListener('click', ubahTema);
+terapkanTema(bacaTema());

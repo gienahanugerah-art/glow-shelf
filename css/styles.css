@@ -3,7 +3,22 @@
   --card: #FFE2E2;
   --text: #0B0909;
   --accent: #4C2365;
+  --on-accent: #FFFFFF;
   --border: #F5CBCB;
+  --input-bg: #FFFFFF;
+  --error: var(--error);
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #1B1420;
+  --card: #2A2030;
+  --text: #F7E9F1;
+  --accent: #E7A6CF;
+  --on-accent: #1B1420;
+  --border: #4A3A50;
+  --input-bg: #1B1420;
+  --error: #FF8A9B;
 }
 
 * {
@@ -26,7 +41,7 @@ body {
 
 .site-header {
   background: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
   padding: 16px 0;
 }
 
@@ -85,6 +100,8 @@ main section {
   padding: 8px;
   border: 1px solid var(--border);
   border-radius: 6px;
+    background: var(--input-bg);
+  color: var(--text);
 }
 
 button {
@@ -92,7 +109,7 @@ button {
   border: none;
   border-radius: 6px;
   background: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
   cursor: pointer;
 }
 
@@ -151,7 +168,14 @@ button {
     grid-template-columns: 1fr;
   }
 }
+
+#theme-toggle {
+  background: transparent;
+  color: inherit;
+  border: 2px solid currentColor;
+}
 .btn-favorit {
   margin-top: 8px;
   width: 100%;
 }
+html { scroll-behavior: smooth; }
