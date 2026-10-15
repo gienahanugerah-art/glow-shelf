@@ -1,11 +1,27 @@
-import { API_URL, PRODUCT_LIMIT, KEY_FAVORIT, KEY_TEMA } from './config.js';
+import {
+  API_URL,
+  PRODUCT_LIMIT,
+  KATEGORI_RAK,
+  KEY_FAVORIT,
+  KEY_TEMA,
+} from './config.js';
 
+// ---------- 1. Elemen halaman ----------
 const productList = document.getElementById('product-list');
 const favoriteList = document.getElementById('favorite-list');
+const statsEl = document.getElementById('stats');
+const statusEl = document.getElementById('status');
+const saranForm = document.getElementById('saran-form');
+const formStatus = document.getElementById('form-status');
+const themeToggle = document.getElementById('theme-toggle');
+
+// ---------- 2. State dan konstanta ----------
+const POLA_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 let semuaProduk = [];
 let favoritIds = bacaFavorit();
 
+// ---------- 3. Favorit (localStorage) ----------
 function bacaFavorit() {
   try {
     const tersimpan = localStorage.getItem(KEY_FAVORIT);
@@ -17,7 +33,11 @@ function bacaFavorit() {
 }
 
 function simpanFavorit() {
-  localStorage.setItem(KEY_FAVORIT, JSON.stringify(favoritIds));
+  try {
+    localStorage.setItem(KEY_FAVORIT, JSON.stringify(favoritIds));
+  } catch (error) {
+    console.error('Gagal menyimpan favorit:', error.message);
+  }
 }
 
 function toggleFavorit(id) {
@@ -29,8 +49,14 @@ function toggleFavorit(id) {
   simpanFavorit();
 }
 
+// ---------- 4. Tampilan produk dan favorit ----------
 function formatHarga(angka) {
   return '$' + angka.toFixed(2);
+}
+
+function tampilkanStatus(pesan, jenis) {
+  statusEl.textContent = pesan;
+  statusEl.className = jenis; // 'loading', 'sukses', atau 'error'
 }
 
 function buatKartu(produk) {
@@ -56,12 +82,14 @@ function buatKartu(produk) {
   const rating = document.createElement('p');
   rating.textContent = `Rating: ${produk.rating}`;
 
-    const tombol = document.createElement('button');
+  const tombol = document.createElement('button');
   tombol.type = 'button';
   tombol.className = 'btn-favorit';
   tombol.dataset.id = produk.id;
   const sudahFavorit = favoritIds.includes(produk.id);
-  tombol.textContent = sudahFavorit ? '♥ Hapus dari favorit' : '♡ Simpan ke favorit';
+  tombol.textContent = sudahFavorit
+    ? '♥ Hapus dari favorit'
+    : '♡ Simpan ke favorit';
 
   kartu.append(gambar, judul, kategori, harga, rating, tombol);
   return kartu;
@@ -93,50 +121,7 @@ function tampilkanFavorit() {
   });
 }
 
-function tanganiKlikFavorit(event) {
-  const tombol = event.target.closest('.btn-favorit');
-  if (!tombol) return;
-
-  const id = Number(tombol.dataset.id);
-  const asal = event.currentTarget.id;
-
-  toggleFavorit(id);
-  tampilkanProduk(semuaProduk);
-  tampilkanStatistik(semuaProduk);
-  tampilkanFavorit();
-
-  // kembalikan fokus ke tombol yang tadi ditekan (untuk pengguna keyboard)
-  const tombolBaru = document.querySelector(`#${asal} [data-id="${id}"]`);
-  if (tombolBaru) tombolBaru.focus();
-}
-
-productList.addEventListener('click', tanganiKlikFavorit);
-favoriteList.addEventListener('click', tanganiKlikFavorit);
-
-async function ambilProduk() {
-  try {
-    const response = await fetch(`${API_URL}?limit=${PRODUCT_LIMIT}`);
-
-    if (!response.ok) {
-      throw new Error(`HTTP Error: ${response.status}`);
-    }
-
-    const data = await response.json();
-    semuaProduk = data.products;
-
-    console.log('Jumlah produk:', semuaProduk.length);
-    tampilkanProduk(semuaProduk);
-    tampilkanStatistik(semuaProduk);
-    tampilkanFavorit();
-
-  } catch (error) {
-    console.error('Gagal mengambil data:', error.message);
-  }
-}
-
-// ---------- analisis data ----------
-const statsEl = document.getElementById('stats');
-
+// ---------- 5. Analisis data ----------
 function hitungStatistik(daftar) {
   if (daftar.length === 0) return null;
 
@@ -190,11 +175,71 @@ function tampilkanStatistik(daftar) {
   );
 }
 
-ambilProduk();
+// ---------- 6. Form saran (email + konfirmasi email) ----------
+function bacaDataForm(form) {
+  return {
+    nama: form.nama.value.trim(),
+    email: form.email.value.trim().toLowerCase(),
+    email2: form.email2.value.trim().toLowerCase(),
+  };
+}
 
-// ---------- tema terang/gelap ----------
-const themeToggle = document.getElementById('theme-toggle');
+function validasiSaran(data) {
+  const errors = {};
 
+  if (data.nama.length === 0) {
+    errors.nama = 'Nama wajib diisi.';
+  }
+
+  if (data.email.length === 0) {
+    errors.email = 'Email wajib diisi.';
+  } else if (!POLA_EMAIL.test(data.email)) {
+    errors.email = 'Format email belum valid. Contoh: nama@gmail.com';
+  }
+
+  if (data.email2.length === 0) {
+    errors.email2 = 'Konfirmasi email wajib diisi.';
+  } else if (data.email2 !== data.email) {
+    errors.email2 = 'Konfirmasi email tidak sama dengan email di atas.';
+  }
+
+  return errors;
+}
+
+function bersihkanErrorForm() {
+  saranForm.querySelectorAll('.error').forEach((el) => (el.textContent = ''));
+  saranForm
+    .querySelectorAll('[aria-invalid="true"]')
+    .forEach((el) => el.removeAttribute('aria-invalid'));
+  formStatus.textContent = '';
+}
+
+function tanganiSubmitForm(event) {
+  event.preventDefault();
+  bersihkanErrorForm();
+
+  const data = bacaDataForm(saranForm);
+  const errors = validasiSaran(data);
+  const daftarField = Object.keys(errors);
+
+  if (daftarField.length > 0) {
+    for (const [field, pesan] of Object.entries(errors)) {
+      const errorEl = document.getElementById(`error-${field}`);
+      if (errorEl) errorEl.textContent = '⚠ ' + pesan;
+
+      const inputEl = saranForm.elements[field];
+      if (inputEl) inputEl.setAttribute('aria-invalid', 'true');
+    }
+    saranForm.elements[daftarField[0]]?.focus();
+    formStatus.textContent = `Periksa kembali isian formulir (${daftarField.length} kolom bermasalah).`;
+    return;
+  }
+
+  formStatus.textContent = `✓ Terima kasih, ${data.nama}! Data valid dan siap dikirim. (Belum dikirim ke server karena ini latihan front-end.)`;
+  console.log('Data saran (belum dikirim):', data);
+}
+
+// ---------- 7. Tema terang/gelap ----------
 function terapkanTema(tema) {
   document.documentElement.setAttribute('data-theme', tema);
   themeToggle.textContent = tema === 'dark' ? 'Mode terang' : 'Mode gelap';
@@ -221,5 +266,65 @@ function ubahTema() {
   }
 }
 
+// ---------- 8. Event ----------
+function tanganiKlikFavorit(event) {
+  const tombol = event.target.closest('.btn-favorit');
+  if (!tombol) return;
+
+  const id = Number(tombol.dataset.id);
+  const asal = event.currentTarget.id;
+
+  toggleFavorit(id);
+  tampilkanProduk(semuaProduk);
+  tampilkanFavorit();
+
+  // kembalikan fokus ke tombol yang tadi ditekan (untuk pengguna keyboard)
+  const tombolBaru = document.querySelector(`#${asal} [data-id="${id}"]`);
+  if (tombolBaru) tombolBaru.focus();
+}
+
+productList.addEventListener('click', tanganiKlikFavorit);
+favoriteList.addEventListener('click', tanganiKlikFavorit);
+saranForm.addEventListener('submit', tanganiSubmitForm);
 themeToggle.addEventListener('click', ubahTema);
+
+// ---------- 9. Ambil data dari REST API ----------
+async function ambilProduk() {
+  tampilkanStatus('⏳ Memuat produk...', 'loading');
+
+  try {
+    const response = await fetch(`${API_URL}?limit=${PRODUCT_LIMIT}`);
+
+    if (!response.ok) {
+      throw new Error(`HTTP Error: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    // hanya produk yang cocok untuk rak kecantikan
+    semuaProduk = data.products.filter((produk) =>
+      KATEGORI_RAK.includes(produk.category)
+    );
+
+    // buang favorit lama yang produknya tidak ada di rak
+    favoritIds = favoritIds.filter((id) =>
+      semuaProduk.some((produk) => produk.id === id)
+    );
+    simpanFavorit();
+
+    tampilkanProduk(semuaProduk);
+    tampilkanFavorit();
+    tampilkanStatistik(semuaProduk);
+    tampilkanStatus(`✓ Berhasil memuat ${semuaProduk.length} produk.`, 'sukses');
+  } catch (error) {
+    tampilkanStatus(
+      `⚠ Gagal memuat produk (${error.message}). Periksa koneksi internet, lalu muat ulang halaman.`,
+      'error'
+    );
+    console.error('Gagal mengambil data:', error.message);
+  }
+}
+
+// ---------- 10. Mulai aplikasi ----------
 terapkanTema(bacaTema());
+ambilProduk();
